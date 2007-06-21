@@ -1,0 +1,8 @@
+Revision history for Net::Plesk
+
+0.02  Fri Nov 17 21:17:58 2006 EST
+        - improved error handling
+	- domain additions accept templating and make web hosting optional
+
+0.01  Sat Oct 14 17:13:30 2006 EST
+        - initial revision
