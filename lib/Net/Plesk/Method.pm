@@ -20,7 +20,6 @@ Net::Plesk::Method - Perl base class for Plesk XML Remote API Method
 
 =head1 SYNOPSIS
 
-  use Exporter;
   @ISA = qw( Net::Plesk::Method );
 
 =head1 DESCRIPTION

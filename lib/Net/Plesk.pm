@@ -3,12 +3,9 @@ package Net::Plesk;
 use 5.005;
 use strict;
 
-use vars qw( $VERSION @ISA $AUTOLOAD $DEBUG $PROTO_VERSION $POST_URL
-             @EXPORT_OK %EXPORT_TAGS ); # @EXPORT
+use vars qw( $VERSION @ISA $AUTOLOAD $DEBUG $PROTO_VERSION $POST_URL );
 
-use Exporter;
 use LWP;
-use Data::Dumper;
 
 use Net::Plesk::Response;
 use Net::Plesk::Method;
@@ -22,9 +19,9 @@ use Net::Plesk::Method::client_add;
 use Net::Plesk::Method::client_get;
 use Net::Plesk::Method::client_ippool_add_ip;
 
-@ISA = qw(Exporter);
+@ISA = ();
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 $PROTO_VERSION = '1.4.1.0';
 
@@ -208,7 +205,7 @@ sub AUTOLOAD {
 
     my $response = new Net::Plesk::Response $res->content;
     
-    warn Dumper( $response )
+    warn "$response\n"
       if $DEBUG;
 
     $response;
