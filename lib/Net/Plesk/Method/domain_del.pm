@@ -9,6 +9,22 @@ $VERSION = '0.01';
 
 $DEBUG = 0;
 
+sub api_version { '1.4.2.0' }
+
+sub init {
+  my ($self, %args) = @_;
+
+  $$self = join "\n" => (
+    '<domain>',
+      '<del>',
+        '<filter>',
+          "<domain_name>$args{domain}</domain_name>",
+        '</filter>',
+      '</del>',
+    '</domain>',
+  );
+}
+
 =head1 NAME
 
 Net::Plesk::Method::domain_del - Perl extension for Plesk XML Remote API domain deletion
@@ -34,20 +50,6 @@ Initializes a Plesk domain_del object.  The I<domain> option is required.
 
 =cut
 
-sub init {
-  my ($self, $domain) = @_;
-  $$self = join ( "\n", (
-	            '<domain>',
-	            '<del>',
-	            '<filter>',
-	            '<domain_name>',
-	            $self->encode($domain),
-	            '</domain_name>',
-	            '</filter>',
-	            '</del>',
-	            '</domain>',
-	          ));
-}
 
 =back
 

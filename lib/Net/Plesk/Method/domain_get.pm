@@ -3,11 +3,30 @@ package Net::Plesk::Method::domain_get;
 use strict;
 
 use vars qw( $VERSION @ISA $AUTOLOAD $DEBUG );
+use constant api_version  => '1.5.2.0';
 
 @ISA = qw( Net::Plesk::Method );
 $VERSION = '0.01';
-
 $DEBUG = 0;
+
+sub init {
+  my ($self, %args) = @_;
+
+  $$self = join "\n" => (
+    '<domain>','<get>',
+
+      '<filter>',
+        "<domain_name>$args{domain}</domain_name>",
+      '</filter>',
+
+      '<dataset>',
+        '<gen_info />',
+        '<hosting />',
+      '</dataset>',
+
+    '</get>','</domain>',
+  );
+}
 
 =head1 NAME
 
@@ -35,23 +54,6 @@ Initializes a Plesk domain_get object.  The I<domain> option is required.
 
 =cut
 
-sub init {
-  my ($self, $domain) = @_;
-  $$self = join ( "\n", (
-	            '<domain>',
-	            '<get>',
-	            '<filter>',
-	            '<domain_name>',
-	            $self->encode($domain),
-	            '</domain_name>',
-	            '</filter>',
-		    '<dataset>',
-		    '<gen_info/>',
-		    '</dataset>',
-	            '</get>',
-	            '</domain>',
-	          ));
-}
 
 =back
 

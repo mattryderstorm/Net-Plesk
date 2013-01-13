@@ -3,29 +3,25 @@ package Net::Plesk;
 use 5.005;
 use strict;
 
-use vars qw( $VERSION @ISA $AUTOLOAD $DEBUG $PROTO_VERSION $POST_URL );
+use vars qw( $VERSION @ISA $AUTOLOAD $PROTO_VERSION $POST_URL
+             @EXPORT_OK %EXPORT_TAGS ); # @EXPORT
 
+use Exporter;
 use LWP;
+use Data::Dumper;
+use XML::Simple;
 
 use Net::Plesk::Response;
 use Net::Plesk::Method;
-use Net::Plesk::Method::domain_add;
-use Net::Plesk::Method::domain_del;
-use Net::Plesk::Method::domain_get;
-use Net::Plesk::Method::mail_add;
-use Net::Plesk::Method::mail_remove;
-use Net::Plesk::Method::mail_set;
-use Net::Plesk::Method::client_add;
-use Net::Plesk::Method::client_get;
-use Net::Plesk::Method::client_ippool_add_ip;
 
-@ISA = ();
+@ISA = qw(Exporter);
 
 $VERSION = '0.03';
 
-$PROTO_VERSION = '1.4.1.0';
-
-$DEBUG = 1;
+BEGIN {
+  use constant NET_PLESK_DEBUG => $ENV{NET_PLESK_DEBUG};
+  warn "\$ENV{NET_PLESK_DEBUG} is: $ENV{NET_PLESK_DEBUG}";
+}
 
 my $ua = LWP::UserAgent->new;
 $ua->agent("Net::Plesk/$VERSION");
@@ -147,11 +143,11 @@ I<:HTTP_AUTH_PASSWD> options are required.
 =cut
 
 sub new {
-  my $proto = shift;
+  my ($proto, @args) = @_;
   my $class = ref($proto) || $proto;
-  my $self = { 'version' => $PROTO_VERSION,
-               @_,
-             };
+
+  my $self = { @args };
+
   bless($self, $class);
 }
 
@@ -175,6 +171,11 @@ sub AUTOLOAD {
   die "$AUTOLOAD Illegal method: $1" unless $1;
   my $autoload = "Net::Plesk::Method::$1";
 
+  die "Couldn't load $AUTOLOAD [$@]" unless do {
+    local $@;
+    eval "use $autoload; 1";
+  };
+
   #inherit?
   my $req = HTTP::Request->new('POST' => $self->{'POST'});
   $req->content_type('text/xml');
@@ -184,34 +185,36 @@ sub AUTOLOAD {
     $req->header( $_ => $self->{$_} );
   }
 
-  my $packet = $autoload->new(@_);
-  $req->content(
-          '<?xml version="1.0"?>' .
-	  '<packet version="' . $self->{'version'} . '">' .
-	  $$packet .
-	  '</packet>'
-  );
+  # NET_PLESK_DEBUG and warn __PACKAGE__.'#'.__LINE__.": " . Data::Dumper->new([ \@_ ] => [ '*AUTOLOAD_ARGS' ])->Dump;
+  NET_PLESK_DEBUG and $self->_log( Data::Dumper->new([ \@_ ] => [ '*AUTOLOAD_ARGS' ])->Dump );
 
-  warn $req->as_string. "\n"
-    if $DEBUG;
+  my $packet  = $autoload->new(@_);
+  my $version = $packet->api_version;
+  my $header  = q{<?xml version="1.0"?>};
+  my $payload = qq{<packet version="$version">$$packet</packet>};
+
+  $req->content($header . $payload);
+
+  # NET_PLESK_DEBUG and warn $req->as_string. "\n";
+  NET_PLESK_DEBUG and $self->_log( $req->as_string. "\n" );
 
   my $res = $ua->request($req);
+
+  # NET_PLESK_DEBUG and warn "\n\$res->decoded_content:\n". $res->decoded_content;
+  NET_PLESK_DEBUG and $self->_log( "\n\$res->decoded_content:\n". $res->decoded_content );
 
   # Check the outcome of the response
   if ($res->is_success) {
 
-    warn "\nRESPONSE:\n". $res->content
-      if $DEBUG;
-
-    my $response = new Net::Plesk::Response $res->content;
+    my $response = Net::Plesk::Response->new( $res->content );
     
-    warn "$response\n"
-      if $DEBUG;
+    # NET_PLESK_DEBUG and warn __PACKAGE__.'#'.__LINE__.": " . Data::Dumper->new([ $response ] => [ 'response' ])->Dump;
+    NET_PLESK_DEBUG and $self->_log( Data::Dumper->new([ $response ] => [ 'response' ])->Dump );
 
-    $response;
+    return $response;
   }
   else {
-    new Net::Plesk::Response (
+    return Net::Plesk::Response->new(
       '<?xml version="1.0" encoding="UTF-8"?>'. #a lie?  probably safe
       '<packet version="' . $self->{'version'} . '">' .
       "<system><status>error</status><errcode>500</errcode>" .
@@ -220,6 +223,22 @@ sub AUTOLOAD {
     );
   }
 
+}
+
+sub _log {
+  my ($self, $message) = @_;
+
+  require POSIX;
+
+  my $filename = NET_PLESK_DEBUG() || "plesk_rpc.log";
+
+  my $fh = IO::File->new($filename => 'a');
+
+  $fh->autoflush(1);
+
+  my $now = POSIX::strftime('%F %T', localtime);
+
+  $fh->print("[$now] $message\n");
 }
 
 =back

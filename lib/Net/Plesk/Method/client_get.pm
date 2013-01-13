@@ -37,22 +37,40 @@ Initializes a Plesk client_get object.  The I<login> options is required.
 
 =cut
 
+sub api_version { '1.5.2.0' }
+
 sub init {
-  my ($self, $login) = (shift, shift);
-  $$self = join ( "\n", (
-	            '<client>',
-	            '<get>',
-	            '<filter>',
-	            '<login>',
-	            $self->encode($login),
-	            '</login>',
-	            '</filter>',
-	            '<dataset>',
-	            '<gen_info/>',
-	            '</dataset>',
-	            '</get>',
-	            '</client>',
-	          ));
+  my ($self, %args) = @_;
+
+  my %filter_keys = (
+    client_id => 'id',
+    username  => 'login',
+    pname     => 'pname',
+  );
+
+  my ($arg_key) = grep { $args{$_} } keys %filter_keys;
+  die 'missing filter key' unless $arg_key;
+
+  my $filter_key   = $filter_keys{$arg_key};
+  my $filter_value = $args{$arg_key};
+  die "missing filter value" unless $filter_value;
+  
+  $$self = join "\n" => (
+	  '<client>',
+      '<get>',
+        '<filter>',
+          "<$filter_key>$filter_value</$filter_key>",
+        '</filter>',
+        '<dataset>', 
+          '<gen_info />', 
+          '<stat />', 
+          '<permissions />', 
+          '<limits />', 
+          '<ippool />', 
+        '</dataset>',
+      '</get>',
+    '</client>',
+  );
 }
 
 =back

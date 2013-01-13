@@ -4,6 +4,8 @@ use strict;
 use XML::Simple;
 use XML::XPath;
 use XML::XPath::XMLParser;
+use Data::Dumper;
+use DateTime;
 
 =head1 NAME
 
@@ -38,7 +40,8 @@ sub new {
   bless($self, $class);
 
   my $data = shift;
-  if ($data =~ /^\<\?xml version=\"1.0\"\?\>(.*)$/s){
+
+  if ($data =~ m/xml \s+ version=" \d+ [.] \d+ " [^>]+ > (.*)/xms) { 
     $data=$1;
   }else{
     $data =~ s/[^\w\s]/ /g;  # yes, we lose stuff
@@ -104,6 +107,162 @@ sub id {
   return wantarray ? @id : $id[0];
 }
 
+sub results {
+  my ($self) = @_;
+
+  my $results = $self->{results} or return;
+  my @ret;
+
+  foreach my $result (@$results) {
+    push @ret, XMLin($result);
+  }
+ 
+   return wantarray ? @ret : \@ret;
+ }
+
+sub get_sso_prefs {
+  my ($self) = @_;
+  my %attributes;
+  my $id;
+ foreach my $result (@{$self->{'results'}}) {
+      foreach my $attr (keys %{XMLin($result)->{'prefs'}}) {
+             $attributes{$attr} = XMLin($result)->{'prefs'}->{$attr};
+      }
+ }
+ return \%attributes;
+}
+
+sub iterate_items {
+  my $self = shift;
+  my @items;
+      my %attributes;
+  foreach my $result (@{$self->{'results'}}) {
+      foreach my $attr (keys %{XMLin($result)}) {
+        $attributes{$attr} = (XMLin($result)->{$attr});     
+      }
+  }
+  return \%attributes;
+}
+
+sub attributes {
+  my ($self,$key,$val) = @_;
+  
+  my %attributes;
+  
+  foreach my $result (@{$self->{'results'}}) {
+      foreach my $attr (keys %{XMLin($result)}) {
+        $attributes{$attr} = (XMLin($result)->{$attr});     
+      }
+
+      if (XMLin($result)->{$key} == $val) {
+          return \%attributes;
+      }
+  }
+}
+
+sub spec_structure_aliases {
+  my ($self) = @_;
+  my %main_struct;
+  my $id;
+ foreach my $result (@{$self->{'results'}}) {
+      $id = XMLin($result)->{'id'};
+      my %attributes;
+      foreach my $attr (keys %{XMLin($result)->{'info'}}) {
+             $attributes{$attr} = XMLin($result)->{'info'}->{$attr};
+      }
+      $attributes{id} = $id;
+      $main_struct{$id} = \%attributes;
+  } 
+ return \%main_struct;
+}
+
+sub spec_structure_mail {
+  my ($self) = @_;
+  my %main_struct;
+  my $id;
+ foreach my $result (@{$self->{'results'}}) {
+      $id = XMLin($result)->{'mailname'}->{'id'};
+      my %attributes;
+      foreach my $attr (keys %{XMLin($result)->{'mailname'}}) {
+             $attributes{$attr} = XMLin($result)->{'mailname'}->{$attr};
+      }
+      $main_struct{$id} = \%attributes;
+  } 
+ return \%main_struct;
+}
+
+sub spec_structure_ftp {
+  my ($self) = @_;
+  my %main_struct;
+  my $id;
+ foreach my $result (@{$self->{'results'}}) {
+      $id = XMLin($result)->{'id'};
+      my %attributes;
+      foreach my $attr (qw/ftp_login ftp_password/) {
+             $attributes{$attr} = XMLin($result)->{'data'}->{'hosting'}->{'vrt_hst'}->{'property'}->{$attr}->{'value'};
+      }
+      $attributes{id} = $id;
+      $main_struct{$id} = \%attributes;
+  }
+
+  return \%main_struct;
+}
+
+sub gen_structure {
+  my ($self) = @_;
+  my %main_struct;
+  my $id;
+ foreach my $result (@{$self->{'results'}}) {
+      $id = XMLin($result)->{'id'};
+      if ($id eq '') {
+        $main_struct{no_results} = 'yes';
+        return \%main_struct;
+      }
+      my %attributes;
+      foreach my $attr (keys %{XMLin($result)}) {
+             $attributes{$attr} = XMLin($result)->{$attr};
+      }
+      $attributes{id} = $id;
+      $main_struct{$id} = \%attributes;
+  } 
+ return \%main_struct;
+}
+
+sub domain_search {
+ my ($self) = @_;
+ my @domain_names;
+ foreach my $result (@{$self->{'results'}}) {
+      foreach my $attr (qw/name/) {
+             push @domain_names,XMLin($result)->{'data'}->{'gen_info'}->{$attr};
+      }
+ } 
+ return \@domain_names;
+}
+
+sub domain_structure {
+  my ($self) = @_;
+  my %main_struct;
+  my $id;
+ foreach my $result (@{$self->{'results'}}) {
+      $id = XMLin($result)->{'id'};
+      my %attributes;
+      foreach my $attr (keys %{XMLin($result)->{'data'}->{'gen_info'}}) {
+             $attributes{$attr} = XMLin($result)->{'data'}->{'gen_info'}->{$attr};
+      }
+
+      foreach my $attr (keys %{XMLin($result)->{'data'}->{'user'}}) {
+             $attributes{$attr} = XMLin($result)->{'data'}->{'user'}->{$attr};
+      }
+      
+      my $value = XMLin($result)->{'data'}->{'limits'}->{'limit'}->{'expiration'}->{'value'};
+      my $dt = DateTime->from_epoch(epoch => $value);
+      $attributes{'expiration'} = $dt->dmy('/');
+      my @keys = keys %{XMLin($result)->{'data'}->{'aliases'}};
+      $attributes{id} = $id;
+      $main_struct{$id} = \%attributes;
+  } 
+ return \%main_struct;
+}
 
 =head1 BUGS
 

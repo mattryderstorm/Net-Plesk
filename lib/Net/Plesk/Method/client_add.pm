@@ -35,51 +35,86 @@ options are required.
 
 =cut
 
+sub api_version { '1.4.2.0' }
+
+################################################################################
+################################################################################
+
 sub init {
-  my ($self, $pname, $login, $passwd, $phone, $fax, $email, $address, $city,
-      $state, $pcode, $country) = @_;
-  $$self = join ( "\n", (
-	            '<client>',
-	            '<add>',
-	            '<gen_info>',
-	            '<pname>',
-	            $self->encode($pname),
-	            '</pname>',
-	            '<login>',
-	            $self->encode($login),
-	            '</login>',
-	            '<passwd>',
-	            $self->encode($passwd),
-	            '</passwd>',
-	            '<phone>',
-	            $self->encode($phone),
-	            '</phone>',
-	            '<fax>',
-	            $self->encode($fax),
-	            '</fax>',
-	            '<email>',
-	            $self->encode($email),
-	            '</email>',
-	            '<address>',
-	            $self->encode($address),
-	            '</address>',
-	            '<city>',
-	            $self->encode($city),
-	            '</city>',
-	            '<state>',
-		    $self->encode($state),
-	            '</state>',
-	            '<pcode>',
-		    $self->encode($pcode),
-	            '</pcode>',
-	            '<country>',
-		    $self->encode($country),
-	            '</country>',
-	            '</gen_info>',
-	            '</add>',
-	            '</client>',
-	          ));
+  my ($self, %args) = @_;
+
+  my @info_keys = qw/pname cname login passwd phone fax email address city state pcode country/;
+
+  $args{$_} && ($args{$_} = $self->encode($args{$_})) for @info_keys;
+  $args{$_} && ($args{$_} = "<$_>$args{$_}</$_>")     for @info_keys;
+
+  my $gen_info = join "\n", grep { defined } @args{@info_keys};
+
+  my $perms = $self->_prepare_permissions(%args);
+  my $limits = $self->_prepare_limits(%args);
+  my @sbnet_user = $self->_prepare_sbnet_user(%args);
+
+  $$self = join "\n" => (
+    '<client>',
+      '<add>',
+
+        '<gen_info>',    $gen_info,  '</gen_info>', 
+        '<limits>',      $limits,    '</limits>',
+        '<permissions>', $perms,     '</permissions>', 
+        @sbnet_user,
+
+	    '</add>',
+	  '</client>',
+    );
 }
+
+################################################################################
+################################################################################
+
+sub _prepare_permissions {
+  my ($self, %args) = @_;
+
+  my @permissions = @{ $args{permissions} };
+
+  my @xml;
+
+  while (my ($key, $value) = splice(@permissions, 0, 2)) {
+    push @xml, $self->defined_element($key, $value);
+  }
+
+  return join "\n", @xml;
+}
+
+################################################################################
+################################################################################
+
+sub _prepare_limits {
+  my ($self, %args) = @_;
+
+  my @limits = @{ $args{limits} };
+
+  my @xml;
+
+  while (my ($key, $value) = splice(@limits, 0, 2)) {
+    push @xml, $self->defined_element($key, $value);
+  }
+
+  return join "\n", @xml;
+}
+
+################################################################################
+################################################################################
+
+sub _prepare_sbnet_user {
+  my ($self, %args) = @_;
+
+  return unless my $sbnet = $args{sbnet};
+
+  return '<sbnet-user>true</sbnet-user>';
+}
+
+################################################################################
+################################################################################
 
 =back
 
