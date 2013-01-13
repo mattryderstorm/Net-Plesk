@@ -1,0 +1,70 @@
+set_limits.pm                   is_client key limits
+
+client_add.pm                            pname cname login passwd phone fax email address city state pcode country 
+client_set.pm                   client_id|login pname cname login passwd phone fax email address city state pcode country
+client_del.pm                   client_id|username
+client_get.pm                   client_id|username
+
+domain_add.pm                   domain username password client_id ip_address template
+domain_del.pm                   domain
+domain_get.pm                   domain
+domain_set.pm                   user_values( active pname phone fax email address city state postcode country perms )
+
+client_ip_add.pm                client_id ip_address
+client_ip_del.pm                client_id ip_address
+
+database_add.pm                 domain_id db_name db_type db_server_id os
+database_del.pm                 database_ids
+database_get.pm                 database_id
+
+database_user_add.pm            database_id username password
+database_user_del.pm            user_ids
+database_user_set.pm            user_id password
+database_users_get.pm           database_id
+
+domain_database_get.pm          domain database_id domain_id
+database_server_get.pm          db_type
+
+domain_alias_add.pm             domain alias
+domain_alias_del.pm             domain
+domain_alias_get.pm             domain domain_id name id
+
+domain_ip_set.pm                domain ip_address
+
+domain_mail_disable.pm          domain_id
+domain_mail_enable.pm           domain_id
+domain_mail_get.pm              domain_id
+
+ftp_set.pm                      domain ip_address username password
+ftp_get.pm                      domain
+
+mailbox_add.pm                  domain_id username password
+mailbox_get.pm                  domain_id username
+mailbox_del.pm                  domain_id username
+mailbox_set.pm                  domain_id username password active
+
+mail_alias_add.pm               domain_id username alias
+mail_alias_del.pm               domain_id username alias
+mail_alias_get.pm               domain_id username alias
+
+mail_list_add.pm                domain_id list_name admin password
+mail_list_del.pm                list_name
+mail_list_get.pm                list_name
+
+mail_redirect.pm                domain_id username active destination
+
+server_ip_add.pm                ip_address netmask type interface
+server_ip_del.pm                $ip_address/@ip_address
+server_ip_get.pm                -
+
+register_idp.pm                 ?
+restore_default_idp.pm          ?
+get_branded_idp.pm              ?
+get_default_idp.pm              ?
+server_sso_enable.pm            ?
+server_sso_get.pm               ?
+set_branded_idp.pm              ?
+
+element($k, $v)
+defined_element($k, $v; return unless defined $v)
+encode($m)
