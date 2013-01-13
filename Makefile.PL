@@ -4,9 +4,6 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     'NAME'	   => 'Net::Plesk',
     'VERSION_FROM' => 'lib/Net/Plesk.pm', # finds $VERSION
-    'PREREQ_PM'    => { 'XML::Simple'            => 0,
-                        'XML::XPath'             => 0,
-                        'XML::XPath::XMLParser'  => 0,
-                        'LWP'                    => 0,
+    'PREREQ_PM'    => {
                       },
 );
